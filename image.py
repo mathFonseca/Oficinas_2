@@ -11,22 +11,19 @@ import commands
 from matplotlib import pyplot as plt
 
 # DEFINES
-end_imagem = 'img2.png'                  # Endereço da imagem
+end_imagem = 'image.jpg'                  # Endereço da imagem
 
-
-# LEMEBRE-SE: ORDEM INVERSA PARA O OPENCV
-# color = [BLUE, GREEN, RED]
+#
 
 lower_blue = [80, 65, 0]
 upper_blue = [255, 255, 125]
 
-lower_red = [0, 0, 0]
-upper_red = [170, 125, 255]
-# O OpenCV lê na ordem BGR  (inverso de RGB). Nesse caso, a tupla tem que ser [B, G, R].
-boundaries = [
-    (lower_blue, upper_blue),  # LOWER blue. UPPER blue
-    (lower_red, upper_red)  # LOWER red, UPPER red
-]
+lower_red = [0, 50, 50]
+upper_red = [10, 255, 255]
+
+# O OpenCV lê na ordem BGR  (inverso de RGB).
+# Nesse caso, a tupla tem que ser [B, G, R].
+
 
 # PRÉ SET PARA TIRAR A FOTO
 quality = 30
@@ -36,13 +33,16 @@ nome = "img"
 extensao = "png"
 
 # PRÉ SET PARA FILTRO DE CINZA
+
 binary_type = 0
 binary_type_name = "Binarização Adaptativa: Gaussiana"
+
 # Lista de Tipos e nomes: Seria legal criar uma enumeração para isso.
 # 0 - Binarização simples
 # 1 - Binarização de Otsu
 # 2 - Binarização Adaptativa: Média
 # 3 - Binarização Adaptativa: Gaussiana
+
 save_flag = True
 threshold_value = 127
 
@@ -53,10 +53,22 @@ threshold_value = 127
 
 
 def tirar_foto(qualidade, altura, largura, nome_foto, extensao_foto):
-    string = "raspistill -q " + str(qualidade) + " -w " + str(largura) + " -h " + str(altura) + " -o " + nome_foto + "." + extensao_foto
+    string = ("raspistill -q "
+              + str(qualidade)
+              + " -w "
+                + str(largura)
+                + " -h "
+                + str(altura)
+                + " -o "
+                + nome_foto
+                + "."
+                + extensao_foto)
     sucessful = 1
     sucessful = os.system(string)
-    # demora para responder esse comando. Talvez seria interessante por um tempo limite?
+
+    # Demora para responder esse comando.
+    # Talvez seria interessante por um tempo limite?
+
     if(sucessful == 1):
         print("Nao foi possivel executar o comando de foto")
     elif(sucessful == 0):
@@ -70,8 +82,6 @@ def load_img(end_imagem):
     return imagem
 
 # Realiza uma escala de cinza através do OpenCV. Utiliza a variável imagem e retorna em img_cinza.
-
-# NÃO ESTÁ CINZANDO A FOTO.
 
 
 def escala_cinza(imagem, save_flag):
@@ -138,21 +148,92 @@ def configure_filter():
         print("Configurações permanecem")
 
 
-def color_detection(imagem, save_flag):
-    #args = vars(ap.parse_args())
-    #imagem = cv2.imread(args[end_imagem])
-    for(lower, upper) in boundaries:
-        lower = np.array(lower, dtype="uint8")
-        upper = np.array(upper, dtype="uint8")
+def blue_detection(imagem, save_flag, lower_blue, upper_blue):
+    lower = np.array(lower_blue, dtype="uint8")
+    upper = np.array(upper_blue, dtype="uint8")
+    mask = cv2.inRange(imagem, lower, upper)
+    img = cv2.bitwise_and(imagem, imagem, mask=mask)
+    if save_flag == True:
+        cv2.imwrite('img_blue.png', img)
 
-        mask = cv2.inRange(imagem, lower, upper)
-        img_detected = cv2.bitwise_and(imagem, imagem, mask=mask)
-        if save_flag == True:
-            cv2.imwrite('img_color_detected.png', img_detected)
+    return img
+
+
+def red_detection(imagem, save_flag, lower_red, upper_red):
+    img_hsv = cv2.cvtColor(imagem, cv2.COLOR_BGR2HSV)
+    lower = np.array(lower_red)
+    upper = np.array(upper_red)
+
+    mask_0 = cv2.inRange(img_hsv, lower, upper)
+
+    output = img_hsv.copy()
+    output[np.where(mask_0 == 0)] = 0
+
+    if save_flag == True:
+        cv2.imwrite('img_red.png', output)
+
+    return output
+
+
+def find_something(imagem):
+    altura, largura = imagem.shape
+
+    nao_preto = [1, 1]
+    nao_preto[0] = -1
+    nao_preto[1] = -1
+    primeiro = None
+
+    for linha in range(0, altura):
+        for coluna in range(0, largura):
+
+            if imagem[linha][coluna] != 0:
+
+                nao_preto[0] = linha
+                nao_preto[1] = coluna
+
+                if(primeiro != None):
+
+                    if linha < primeiro[0]:
+
+                        primeiro[0] = linha
+
+                    if coluna < primeiro[1]:
+
+                        primeiro[1] = coluna
+                else:
+
+                    primeiro = nao_preto
+
+    return primeiro
+
 # ******************************
 # MAIN CODE
 
 
+print("Configurações atuais")
+
+imagem = load_img(end_imagem)
+
+blue_img = blue_detection(imagem, save_flag, lower_blue, upper_blue)
+
+red_img = red_detection(imagem, True, lower_red, upper_red)
+
+red_img_cinza = escala_cinza(red_img, True)
+
+blue_img_cinza = escala_cinza(blue_img, True)
+
+somewhat = find_something(blue_img_cinza)
+somewhat2 = find_something(red_img_cinza)
+
+print(somewhat2)
+
+imagem[somewhat2[0], somewhat2[1]] = (0, 0, 0)
+cv2.imwrite("teste.png", imagem)
+
+# firstest_blue = find_something(blue_img)
+
+
+'''
 first_loop = True
 main_loop = True
 
@@ -162,6 +243,7 @@ while main_loop:
         print("Bem vindo ao menu de câmera: ")
         print("Aperte 1 para tirar uma foto. ")
         print("Ou aperte qualquer outra tecla para sair.")
+        # Melhorar esse menu
         option = input()
         if option == 1:
             configure_cam()
@@ -171,7 +253,8 @@ while main_loop:
             print("Carregando imagem...")
             img = load_img(end_imagem)
             print("Detectando cores...")
-            color_detection(img, save_flag)
+            blue_detection(img, save_flag, lower_blue, upper_blue)
+            red_detection(img, save_flag, lower_red, upper_red)
             print("Transformando imagem em escala de cinza... ")
             img_cinza = escala_cinza(img, save_flag)
             print("Binarizando imagem...")
@@ -179,3 +262,4 @@ while main_loop:
         else:
             first_loop = False
             main_loop = False
+'''

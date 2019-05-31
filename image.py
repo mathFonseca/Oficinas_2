@@ -57,13 +57,13 @@ def take_picture(quality, height, width, file_name, file_extension):
     string = ("raspistill -q "
               + str(quality)
               + " -w "
-                + str(width)
-                + " -h "
-                + str(height)
-                + " -o "
-                + file_name
-                + "."
-                + file_extension)
+              + str(width)
+              + " -h "
+              + str(height)
+              + " -o "
+              + file_name
+              + "."
+              + file_extension)
     sucessful = True
     sucessful = os.system(string)
 

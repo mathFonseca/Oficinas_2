@@ -1,0 +1,10 @@
+from gpiozero import Motor
+import time
+
+motor = Motor(forward=11, backward=13)
+
+for i in range(4):
+	robot.forward()
+	time.sleep(5)
+	robot.backward()
+	time.sleep(5)

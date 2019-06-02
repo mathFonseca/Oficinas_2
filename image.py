@@ -6,7 +6,7 @@
 import numpy as np  # Numeric Operations Library
 import cv2  # Open CV v2 for images Operations
 import os   # Operational System Library.
-import commands # For utilizing terminal commands inside here
+import commands  # For utilizing terminal commands inside here
 
 # IMPORTS DISCONTINUED
 
@@ -14,15 +14,15 @@ import argparse
 from matplotlib import pyplot as plt
 
 # DEFINES AND GLOBAL VARIABLES
-image_address = 'image.jpg' # Address for acessing the image that
+image_address = 'image.jpg'  # Address for acessing the image that
 # will be used in the application
 
 # In OpenCV, it utilizes the following order: Blue Green Redself.
 # It stills RGB, but in the reverse order.
 
-lower_blue = [80, 65, 0]    # Lower parameters for acceptable blue color
+lower_blue = [50, 0, 0]    # Lower parameters for acceptable blue color
 upper_blue = [255, 255, 125]    # Upper parameters for acceptable blue color
-lower_red = [0, 50, 50] # Lower parameters for acceptable red color
+lower_red = [0, 50, 50]  # Lower parameters for acceptable red color
 upper_red = [10, 255, 255]  # Upper parameters for acceptable red color
 
 # Default settings for the Raspberry Camera.
@@ -53,6 +53,7 @@ threshold_value = 127
 # Connects with the OS inside the Raspberry and take a picture.
 # It utilizes the default setting described above.
 
+
 def take_picture(quality, height, width, file_name, file_extension):
     string = ("raspistill -q "
               + str(quality)
@@ -78,12 +79,14 @@ def take_picture(quality, height, width, file_name, file_extension):
 
 # Loads the image_file into a proper variable.
 
+
 def load_image(image_address):
     original_image = cv2.imread(image_address)
     return original_image
 
 # Applys Grey Sacle filter on the image given.
 # It utilizes the normal grey scale algorithm from OpenCV
+
 
 def apply_grey_scale(original_image, save_flag):
     grey_scale_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
@@ -93,25 +96,26 @@ def apply_grey_scale(original_image, save_flag):
 
 # Applys the default binarzation to a given grey scale image.
 
+
 def binarization(grey_scale_image, threshold_value, binary_type, save_flag):
     if binary_type == 0:
-        ret, binary_image = cv2.threshold(grey_scale_image, \
-        threshold_value, 255, cv2.THRESH_BINARY)
+        ret, binary_image = cv2.threshold(grey_scale_image,
+                                          threshold_value, 255, cv2.THRESH_BINARY)
         if save_flag == True:
             cv2.imwrite('simple_binarization.png', binary_image)
     elif binary_type == 1:
-        ret, binary_img = cv2.threshold(grey_scale_image, 0, 255, \
-        cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        ret, binary_image = cv2.threshold(grey_scale_image, 0, 255,
+                                          cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         if save_flag == True:
             cv2.imwrite('otsu_binarization.png', binary_image)
     elif binary_type == 2:
-        binary_img = cv2.adaptiveThreshold(grey_scale_image, 255, \
-        cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+        binary_image = cv2.adaptiveThreshold(grey_scale_image, 255,
+                                             cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
         if save_flag == True:
             cv2.imwrite('adaptative_binarzation_mean.png', binary_image)
     elif binary_type == 3:
-        binary_img = cv2.adaptiveThreshold(grey_scale_image, 255, \
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        binary_image = cv2.adaptiveThreshold(grey_scale_image, 255,
+                                             cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
         if save_flag == True:
             cv2.imwrite('adaptative_binarzation_gaussian.png', binary_image)
 
@@ -119,11 +123,12 @@ def binarization(grey_scale_image, threshold_value, binary_type, save_flag):
 
 # Function for setting the camera parameters
 
+
 def configure_cam():
     print("\nStarting Camera...")
     print("Default Camera Setting:\nQuality: "
-            + str(quality)
-            + "\nHeight (pixels): "
+          + str(quality)
+          + "\nHeight (pixels): "
             + str(height)
             + "\nWidth (pixels): "
             + str(width)
@@ -132,8 +137,8 @@ def configure_cam():
             + "."
             + file_extension
             + "")
-    print("If you want to modify, press 1. To keep this setting and proceed\
-            , press 2.")
+    print("If you want to modify, press 1. \n\
+To keep this setting and proceed, press 2.")
     option = input()
     if option == 1:
         print("Still not implemented. Come back later")
@@ -142,16 +147,18 @@ def configure_cam():
 
 # Function for setting the filters parameters
 
+
 def configure_filter():
     print("\nStaring filters...")
     print("Default settings:\nBinarization type: "
-            + binary_type_name
-            + "\nThreshold Value: "
+          + binary_type_name
+          + "\nThreshold Value: "
             + str(threshold_value)
             + "\nAutomatic save all the intermediate files: "
             + str(save_flag))
-    print("If you want to modify, press 1. To keep this setting and proceed,\
-        press 2.")
+    print("If you want to modify, press 1.\n\
+To keep this setting and proceed,\
+    press 2.")
     option = input()
     if option == 1:
         print("Still not implemented. Come back later")
@@ -160,18 +167,24 @@ def configure_filter():
 
 # Function that detect the blue color on a given image.
 
-def blue_detection(original_image, save_flag, lower_blue, upper_blue):
-    lower = np.array(lower_blue, dtype="uint8")
-    upper = np.array(upper_blue, dtype="uint8")
-    mask = cv2.inRange(original_image, lower, upper)
-    blue_region_image = cv2.bitwise_and(original_image, original_imagem,\
-     mask=mask)
-    if save_flag == True:
-        cv2.imwrite('blue_region_image.png', blue_region_image)
 
-    return blue_region_image
+def blue_detection(original_image, save_flag, lower_blue, upper_blue):
+    hsv_type_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2HSV)
+    lower = np.array(lower_blue)
+    upper = np.array(upper_blue)
+
+    mask_0 = cv2.inRange(original_image, lower, upper)
+
+    output_image = hsv_type_image.copy()
+    output_image[np.where(mask_0 == 0)] = 0
+
+    if save_flag == True:
+        cv2.imwrite('blue_region_image.png', output_image)
+
+    return output_image
 
 # Function that detect the red color on a given image.
+
 
 def red_detection(original_image, save_flag, lower_red, upper_red):
     hsv_type_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2HSV)
@@ -190,8 +203,10 @@ def red_detection(original_image, save_flag, lower_red, upper_red):
 
 # Function that returns the first colored pixel found in the given image.
 #
+
+
 def find_colored_pixel(original_image):
-    height, width = imagem.shape
+    height, width = original_image.shape
 
     not_colored_pixels = [1, 1]
     not_colored_pixels[0] = -1
@@ -214,6 +229,7 @@ def find_colored_pixel(original_image):
 
 # Main menu of the program as a function.
 
+
 def main_menu():
     main_loop = True
     print("Starting the main code...")
@@ -225,6 +241,7 @@ def main_menu():
 
 # FUNCTIONS DISCONTINUED
 
+
 def histogram(original_image):
     # ******************************
     # Histograma.
@@ -233,6 +250,7 @@ def histogram(original_image):
     plt.subplot(2, 1, 2), plt.hist(imagem.ravel(), 256)
     plt.title('Histogram'), plt.xticks([]), plt.yticks([])
     plt.show()
+
 
 # ******************************
 # MAIN CODE
@@ -244,13 +262,18 @@ original_image = load_image(image_address)
 print("Step 2 - Finding Blue, Red pixels")
 blue_image = blue_detection(original_image, save_flag, lower_blue, upper_blue)
 red_image = red_detection(original_image, save_flag, lower_red, upper_red)
-blue_image_grey_scale = grey_scale_image(blue_image, save_flag)
-red_image_grey_scale = grey_scale_image(red_image, save_flag)
+blue_image_grey_scale = apply_grey_scale(blue_image, save_flag)
+red_image_grey_scale = apply_grey_scale(red_image, save_flag)
 blue_pixel = find_colored_pixel(blue_image_grey_scale)
 red_pixel = find_colored_pixel(red_image_grey_scale)
+print("Blue Pixel Found at: ")
+print(blue_pixel)
+print("Red Pixel Found at: ")
+print(red_pixel)
 print("Step 3 - Grey scale and binarization.")
-grey_scale_image = grey_scale_image(original_image, save_flag)
-binarized_image = binarzation(grey_scale_image, threshold_value,\
- binary_type, save_flag)
+grey_scale_image = apply_grey_scale(original_image, save_flag)
+binarized_image = binarization(grey_scale_image, threshold_value,
+                               binary_type, save_flag)
+
 
 # continues...

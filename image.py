@@ -21,7 +21,7 @@ image_address = 'image.jpg'  # Address for acessing the image that
 # It stills RGB, but in the reverse order.
 
 lower_blue = [50, 0, 0]    # Lower parameters for acceptable blue color
-upper_blue = [255, 255, 125]    # Upper parameters for acceptable blue color
+upper_blue = [255, 10, 125]    # Upper parameters for acceptable blue color
 lower_red = [0, 50, 50]  # Lower parameters for acceptable red color
 upper_red = [10, 255, 255]  # Upper parameters for acceptable red color
 
@@ -202,7 +202,6 @@ def red_detection(original_image, save_flag, lower_red, upper_red):
     return output_image
 
 # Function that returns the first colored pixel found in the given image.
-#
 
 
 def find_colored_pixel(original_image):
@@ -226,6 +225,49 @@ def find_colored_pixel(original_image):
                 else:
                     first_colored_pixel = not_colored_pixels
     return first_colored_pixel
+
+# Function that returns the center coordinate of a 3x3 colored pixel grid
+
+def coordinatePixel(original_image):
+    height, width = original_image.shape
+
+    blank_grid = [3,3]
+    colored_pixel = None
+    holder_pixel = None
+    invalid_grid = False
+    completed_grid = 0
+
+    # Preenche blank_grid com -1.
+    for line in range(0,3):
+        for column in range(0,3):
+            blank_grid[line][column] = -1
+
+
+    for line in range(0, height):
+        for column in range(0, width):
+
+            if original_image[line][column] != 0:
+                # If already found an 3x3 blank grid
+                if holder_pixel != None:
+
+                    # Checks if is the lower holder_pixel
+
+                    # Look if find a 3x3 grid not black
+                    grid_height = line + 2
+                    grid_width = column + 2
+
+                    # If finds a grid 3x3 not blank, returns invalid_grid False
+                    # otherwise, returns invalid_grid True
+                    for grid_line in range(height, grid_height):
+                        for grid_column in range(width, grid_width):
+                            if ((original_image[grid_line][grid_column]) == 0 and (invalid_grid == False)):
+                                invalid_grid = False
+                            else:
+                                invalid_grid = True
+
+                    if invalid_grid == False:
+
+
 
 # Main menu of the program as a function.
 
@@ -259,17 +301,22 @@ print("\nConfiguration section finished.")
 print("Step 1 - Shoot the image.")
 take_picture(quality, height, width, file_name, file_extension)
 original_image = load_image(image_address)
+
 print("Step 2 - Finding Blue, Red pixels")
 blue_image = blue_detection(original_image, save_flag, lower_blue, upper_blue)
 red_image = red_detection(original_image, save_flag, lower_red, upper_red)
+
 blue_image_grey_scale = apply_grey_scale(blue_image, save_flag)
 red_image_grey_scale = apply_grey_scale(red_image, save_flag)
+
 blue_pixel = find_colored_pixel(blue_image_grey_scale)
 red_pixel = find_colored_pixel(red_image_grey_scale)
+
 print("Blue Pixel Found at: ")
 print(blue_pixel)
 print("Red Pixel Found at: ")
 print(red_pixel)
+
 print("Step 3 - Grey scale and binarization.")
 grey_scale_image = apply_grey_scale(original_image, save_flag)
 binarized_image = binarization(grey_scale_image, threshold_value,

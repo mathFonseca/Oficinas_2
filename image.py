@@ -14,7 +14,7 @@ import argparse
 from matplotlib import pyplot as plt
 
 # DEFINES AND GLOBAL VARIABLES
-image_address = 'image.jpg'  # Address for acessing the image that
+image_address = 'first_maze.jpeg'  # Address for acessing the image that
 # will be used in the application
 
 # In OpenCV, it utilizes the following order: Blue Green Redself.
@@ -34,8 +34,8 @@ file_extension = "png"    # The extension of the picture saved.
 
 # Default setting for the binarization and grey scale functions
 
-binary_type = 3
-binary_type_name = "Adaptative Binarzation using Gaussian Function."
+binary_type = 1
+binary_type_name = "Otsu's Binarization"
 
 # Type of binarizations implemented an their name
 # 0 - Simple Binarization.
@@ -207,16 +207,13 @@ def red_detection(original_image, save_flag, lower_red, upper_red):
 def find_colored_pixel(original_image):
     height, width = original_image.shape
 
-    not_colored_pixels = [1, 1]
-    not_colored_pixels[0] = -1
-    not_colored_pixels[1] = -1
+    not_colored_pixels = np.array([-1,-1])
     first_colored_pixel = None
 
     for line in range(0, height):
         for column in range(0, width):
             if original_image[line][column] != 0:
-                not_colored_pixels[0] = line
-                not_colored_pixels[1] = column
+                not_colored_pixels = (line, column)
                 if(first_colored_pixel != None):
                     if line < first_colored_pixel[0]:
                         first_colored_pixel[0] = line
@@ -230,43 +227,95 @@ def find_colored_pixel(original_image):
 
 def coordinatePixel(original_image):
     height, width = original_image.shape
-
-    blank_grid = [3,3]
-    colored_pixel = None
-    holder_pixel = None
-    invalid_grid = False
-    completed_grid = 0
-
-    # Preenche blank_grid com -1.
-    for line in range(0,3):
-        for column in range(0,3):
-            blank_grid[line][column] = -1
-
+    colored_pixel = np.array([-1,-1])
+    holder_pixel = np.array([-1,-1])
+    possible_holder_pixel = np.array([-1,-1])
 
     for line in range(0, height):
         for column in range(0, width):
-
             if original_image[line][column] != 0:
-                # If already found an 3x3 blank grid
-                if holder_pixel != None:
+                '''
+                Checks if the given position the COLOR of the pixel is or isn't black.
+                if YES, then proceeds to next step
+                if NOT, rolls over to the next pixel.
+                '''
+                if ((holder_pixel[0] != -1) and (holder_pixel[1] != -1)):
+                    '''
+                    Checks if we already found out a holder_pixel.
+                    if YES, checks if this holder pixel holds a 3x3 grid with it.
+                    if NOT, what we found may be a holder pixel.
+                    Set the possible_holder_pixel variable then proceeds to find out a 3x3 grid
+                    '''
+                    if((line < holder_pixel[0]) and (column < holder_pixel[1])):
+                        '''
+                        First, we check if this pixel we are in (image[line][column]) are more
+                        further to [0,0] than the holder pixel we found sometime earlier.
+                        if YES, than we set the position we are in as a possible_holder_pixel
+                        And runs the grid finder.
+                        If the grid finder returns TRUE, we found out a new acceptable holder pixel
+                        if not, we stick with the old one.
+                        '''
+                        possible_holder_pixel = (line, column)
+                        if(findsGrid(original_image, possible_holder_pixel)):
+                            holder_pixel = possible_holder_pixel
+                else:
+                    '''
+                    This is the first holder pixel we found.
+                    Set possible_holder_pixel and then runs the 3x3 grid finder.
+                    '''
+                    possible_holder_pixel = (line, column)
+                    '''
+                    If findsGrid returns TRUE, the possible_holder_pixel was actually
+                    and true holder pixel. Set the holder pixel and proceeds
+                    '''
+                    if(findsGrid(original_image, possible_holder_pixel)):
+                        holder_pixel = possible_holder_pixel
 
-                    # Checks if is the lower holder_pixel
+    '''
+    if, after running through all the image, the holder_pixel
+    still with his original value (-1, -1), we did not succeed to find out the 3x3 grid
+    Try to run the 1 pixel function instead.
+    '''
+    if( (holder_pixel[0] == -1) and (holder_pixel[1] == -1) ):
+        return False
+    else:
+        '''
+        If we did find out a trully holder pixel, then returns the CENTER of the 3x3 grid
+        Walking 1 pixel LEFT and 1 pixel DOWN.
+        '''
+        holder_pixel = (holder_pixel[0] + 1, holder_pixel[1] + 1)
+        return holder_pixel
 
-                    # Look if find a 3x3 grid not black
-                    grid_height = line + 2
-                    grid_width = column + 2
 
-                    # If finds a grid 3x3 not blank, returns invalid_grid False
-                    # otherwise, returns invalid_grid True
-                    for grid_line in range(height, grid_height):
-                        for grid_column in range(width, grid_width):
-                            if ((original_image[grid_line][grid_column]) == 0 and (invalid_grid == False)):
-                                invalid_grid = False
-                            else:
-                                invalid_grid = True
+# Function that checks if exits a 3x3 grid <expanded downwards> not blank_grid
 
-                    if invalid_grid == False:
+def findsGrid(original_image, holder_pixel):
+    '''
+    Creates a flag called invalid_grid, that begins with False.
+    We create the range for the FOR with a space of 2. Beggining at self and walking 2 pixels
+    at X (LINE) and Y (COLUMN).
+    If we find out at this run some pixel that are BLACK (not colored), we set the invalid_grid to False.
+    If not, we walked through a 3x3 grid, starting from the holder pixel, going LEFT and DOWNWARDS
+    and we not found any black pixel. With means that are a fully 3x3 COLORED GRID.
+    We then set the invalid_grid to TRUE.
+    '''
+    invalid_grid = False
+    holder_line = holder_pixel[0]
+    holder_column = holder_pixel[1]
+    for line in range(holder_line, holder_line + 2):
+        for column in range(holder_column, holder_column + 2):
+            if( (original_image[holder_line][holder_column] != 0) and (invalid_grid == False) ):
+                invalid_grid = False
+            else:
+                invalid_grid = True
 
+    '''
+    if invalid_grid is TRUE, return TRUE. If not, do not.
+    '''
+    if invalid_grid != True:
+        return False
+    else:
+        return True
 
 
 # Main menu of the program as a function.
@@ -296,7 +345,7 @@ def histogram(original_image):
 
 # ******************************
 # MAIN CODE
-main_menu()
+#main_menu()
 print("\nConfiguration section finished.")
 print("Step 1 - Shoot the image.")
 take_picture(quality, height, width, file_name, file_extension)
@@ -309,8 +358,23 @@ red_image = red_detection(original_image, save_flag, lower_red, upper_red)
 blue_image_grey_scale = apply_grey_scale(blue_image, save_flag)
 red_image_grey_scale = apply_grey_scale(red_image, save_flag)
 
-blue_pixel = find_colored_pixel(blue_image_grey_scale)
-red_pixel = find_colored_pixel(red_image_grey_scale)
+blue_result = coordinatePixel(blue_image_grey_scale)
+if(blue_result == False):
+    print("We did not succeed to find a 3x3 grid on a blue spot.\n \
+Running the function that returns the 1 pixel instead.")
+    blue_pixel = find_colored_pixel(blue_image_grey_scale)
+else:
+    print("We did it! We find out a 3x3 grid. yay!")
+    blue_pixel = blue_result
+
+red_result = coordinatePixel(red_image_grey_scale)
+if(red_result == False):
+    print("We did not succeed to find a 3x3 grid on a red spot.\n \
+Running the function that returns the 1 pixel instead.")
+    red_pixel = find_colored_pixel(red_image_grey_scale)
+else:
+    print("We did it! We find out a 3x3 grid on a RED spot . yay!")
+    red_pixel = red_result
 
 print("Blue Pixel Found at: ")
 print(blue_pixel)

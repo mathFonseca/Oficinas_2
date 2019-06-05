@@ -14,7 +14,7 @@ import argparse
 from matplotlib import pyplot as plt
 
 # DEFINES AND GLOBAL VARIABLES
-image_address = 'first_maze.jpeg'  # Address for acessing the image that
+image_address = 'image.jpg'  # Address for acessing the image that
 # will be used in the application
 
 # In OpenCV, it utilizes the following order: Blue Green Redself.
@@ -317,6 +317,12 @@ def findsGrid(original_image, holder_pixel):
     else:
         return True
 
+# Function that paints a black pixel over a colored region of a given image.
+def paintPixelBlack(image, pixel_1, pixel_2):
+    image[pixel_1[0]][pixel_1[1]] = (0,0,0)
+    image[pixel_2[0]][pixel_2[1]] = (0,0,0)    
+    cv2.imwrite('painted.png', image)
+
 
 # Main menu of the program as a function.
 
@@ -380,6 +386,10 @@ print("Blue Pixel Found at: ")
 print(blue_pixel)
 print("Red Pixel Found at: ")
 print(red_pixel)
+
+print("Step 2.1 - Painting the pixel found in the original image")
+paintPixelBlack(original_image,blue_pixel, red_pixel)
+
 
 print("Step 3 - Grey scale and binarization.")
 grey_scale_image = apply_grey_scale(original_image, save_flag)

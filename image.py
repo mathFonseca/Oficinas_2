@@ -14,16 +14,20 @@ import argparse
 from matplotlib import pyplot as plt
 
 # DEFINES AND GLOBAL VARIABLES
-image_address = 'image.jpg'  # Address for acessing the image that
+image_address = 'second_maze.jpeg'  # Address for acessing the image that
 # will be used in the application
 
-# In OpenCV, it utilizes the following order: Blue Green Redself.
+# In OpenCV, it utilizes the following order: Blue Green Red.
 # It stills RGB, but in the reverse order.
 
 lower_blue = [50, 0, 0]    # Lower parameters for acceptable blue color
 upper_blue = [255, 10, 125]    # Upper parameters for acceptable blue color
+
 lower_red = [0, 50, 50]  # Lower parameters for acceptable red color
 upper_red = [10, 255, 255]  # Upper parameters for acceptable red color
+
+lower_yellow = [0, 130, 140]   # Lower parameters for acceptable yellow color.
+upper_yellow = [100, 180, 255]   # Upper parameters for acceptable yellow color.
 
 # Default settings for the Raspberry Camera.
 quality = 30    # 30% of the original pictura quality
@@ -201,24 +205,42 @@ def red_detection(original_image, save_flag, lower_red, upper_red):
 
     return output_image
 
+# Function that detect the yellow color on a given image.
+
+
+def yellow_detection(original_image, save_flag, lower_yellow, upper_yellow):
+    hsv_type_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2HSV)
+    lower = np.array(lower_yellow)
+    upper = np.array(upper_yellow)
+
+    mask_0 = cv2.inRange(hsv_type_image, lower, upper)
+
+    output_image = hsv_type_image.copy()
+    output_image[np.where(mask_0 == 0)] = 0
+
+    if save_flag == True:
+        cv2.imwrite('yellow_region_image.png', output_image)
+
+    return output_image
+
 # Function that returns the first colored pixel found in the given image.
 
 
 def find_colored_pixel(original_image):
     height, width = original_image.shape
-
+    what_is_happening = 0
     not_colored_pixels = np.array([-1,-1])
-    first_colored_pixel = None
+    first_colored_pixel = np.array([-1, -1])
 
     for line in range(0, height):
         for column in range(0, width):
             if original_image[line][column] != 0:
                 not_colored_pixels = (line, column)
-                if(first_colored_pixel != None):
+                if(first_colored_pixel[0] != -1 and first_colored_pixel[1] != -1):
                     if line < first_colored_pixel[0]:
                         first_colored_pixel[0] = line
-                    if column < first_colored_pixel[1]:
-                        first_colored_pixel[1] = column
+                    '''if column < first_colored_pixel[1]:
+                        first_colored_pixel[1] = column'''
                 else:
                     first_colored_pixel = not_colored_pixels
     return first_colored_pixel
@@ -256,7 +278,7 @@ def coordinatePixel(original_image):
                         if not, we stick with the old one.
                         '''
                         possible_holder_pixel = (line, column)
-                        if(findsGrid(original_image, possible_holder_pixel)):
+                        if(findsGrid(original_image, possible_holder_pixel) == True):
                             holder_pixel = possible_holder_pixel
                 else:
                     '''
@@ -268,7 +290,7 @@ def coordinatePixel(original_image):
                     If findsGrid returns TRUE, the possible_holder_pixel was actually
                     and true holder pixel. Set the holder pixel and proceeds
                     '''
-                    if(findsGrid(original_image, possible_holder_pixel)):
+                    if(findsGrid(original_image, possible_holder_pixel) == True):
                         holder_pixel = possible_holder_pixel
 
     '''
@@ -312,15 +334,15 @@ def findsGrid(original_image, holder_pixel):
     '''
     if invalid_grid is TRUE, return TRUE. If not, do not.
     '''
-    if invalid_grid != True:
-        return False
-    else:
-        return True
+    return invalid_grid
+
 
 # Function that paints a black pixel over a colored region of a given image.
 def paintPixelBlack(image, pixel_1, pixel_2):
-    image[pixel_1[0]][pixel_1[1]] = (0,0,0)
-    image[pixel_2[0]][pixel_2[1]] = (0,0,0)    
+    if(pixel_1 != None):
+        image[pixel_1[0]][pixel_1[1]] = (0,0,0)
+    elif(pixel_2 != None):
+        image[pixel_2[0]][pixel_2[1]] = (0,0,0)
     cv2.imwrite('painted.png', image)
 
 
@@ -358,12 +380,16 @@ take_picture(quality, height, width, file_name, file_extension)
 original_image = load_image(image_address)
 
 print("Step 2 - Finding Blue, Red pixels")
-blue_image = blue_detection(original_image, save_flag, lower_blue, upper_blue)
+# blue_image = blue_detection(original_image, save_flag, lower_blue, upper_blue)
 red_image = red_detection(original_image, save_flag, lower_red, upper_red)
+yellow_image = yellow_detection(original_image, save_flag, lower_yellow, upper_yellow)
 
-blue_image_grey_scale = apply_grey_scale(blue_image, save_flag)
+# blue_image_grey_scale = apply_grey_scale(blue_image, save_flag)
 red_image_grey_scale = apply_grey_scale(red_image, save_flag)
+yellow_image_grey_scale = apply_grey_scale(yellow_image, save_flag)
 
+# Find Blue Pixel
+'''
 blue_result = coordinatePixel(blue_image_grey_scale)
 if(blue_result == False):
     print("We did not succeed to find a 3x3 grid on a blue spot.\n \
@@ -372,6 +398,8 @@ Running the function that returns the 1 pixel instead.")
 else:
     print("We did it! We find out a 3x3 grid. yay!")
     blue_pixel = blue_result
+'''
+# Find Red Pixel
 
 red_result = coordinatePixel(red_image_grey_scale)
 if(red_result == False):
@@ -382,13 +410,31 @@ else:
     print("We did it! We find out a 3x3 grid on a RED spot . yay!")
     red_pixel = red_result
 
+# Find Yellow Pixel
+
+yellow_result = coordinatePixel(yellow_image_grey_scale)
+if yellow_result == False:
+    print("We did not succeed to find a 3x3 grid on a red spot.\n \
+Running the function that returns the 1 pixel instead.")
+    yellow_pixel = find_colored_pixel(yellow_image_grey_scale)
+else:
+    print("We did it! We find out a 3x3 grid. yay!")
+    yellow_pixel = yellow_result
+
+'''
 print("Blue Pixel Found at: ")
 print(blue_pixel)
+'''
 print("Red Pixel Found at: ")
 print(red_pixel)
 
+print("Yellow Pixel Found at: ")
+print(yellow_pixel)
+
+
+
 print("Step 2.1 - Painting the pixel found in the original image")
-paintPixelBlack(original_image,blue_pixel, red_pixel)
+paintPixelBlack(original_image, red_pixel, yellow_pixel)
 
 
 print("Step 3 - Grey scale and binarization.")
